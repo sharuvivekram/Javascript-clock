@@ -12,7 +12,7 @@ setInterval(() => {
     second.style.transform = `rotate(${srotation}deg)`;
 
     let a = new Date();
-    let time = a.getHours() - 12 + ":" + a.getMinutes() + ":" + a.getSeconds() + " " + ampm(a.getHours());
+    let time = a.getHours() + ":" + a.getMinutes() + ":" + a.getSeconds() + " " + ampm(a.getHours());
     const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
     let date = a.toLocaleDateString(undefined, options);
     document.getElementById('time').innerHTML = time + "<br>" + date;
