@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chrono — JavaScript Clock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14110f;
+    --face: #1c1815;
+    --ink: #f3e9dc;
+    --muted: #8a7d6b;
+    --amber: #e0a458;
+    --amber-soft: #c98a3e;
+    --red: #d4654a;
+    --ring: #2c2620;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 30%, #1f1a16 0%, var(--bg) 70%);
+    color: var(--ink);
+    font-family: 'Fraunces', Georgia, serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* subtle grain texture */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  .clock {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 42%, #221d18 0%, var(--face) 60%, #161310 100%);
+    box-shadow:
+      0 0 0 1px var(--ring),
+      0 0 0 12px #100d0b,
+      0 0 0 13px #29221b,
+      0 30px 70px -20px rgba(0,0,0,0.8),
+      inset 0 2px 8px rgba(255,255,255,0.04);
+    animation: rise 1s cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(20px) scale(.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .tick {
+    position: absolute;
+    left: 50%;
+    top: 8px;
+    width: 2px;
+    height: 12px;
+    background: var(--muted);
+    transform-origin: 50% 152px;
+    border-radius: 2px;
+  }
+  .tick.hour { height: 18px; width: 3px; background: var(--amber-soft); }
+
+  .numeral {
+    position: absolute;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--ink);
+    width: 40px;
+    text-align: center;
+  }
+
+  .hand {
+    position: absolute;
+    left: 50%;
+    bottom: 50%;
+    transform-origin: 50% 100%;
+    border-radius: 6px;
+    z-index: 5;
+  }
+  .hand.hour   { width: 8px;  height: 78px;  margin-left: -4px; background: var(--ink); }
+  .hand.minute { width: 5px;  height: 112px; margin-left: -2.5px; background: var(--amber); }
+  .hand.second {
+    width: 2px; height: 128px; margin-left: -1px; background: var(--red);
+    transition: transform 0.08s cubic-bezier(.4,2.3,.6,1);
+  }
+
+  .cap {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 16px; height: 16px;
+    margin: -8px 0 0 -8px;
+    background: var(--amber);
+    border: 3px solid var(--face);
+    border-radius: 50%;
+    z-index: 6;
+    box-shadow: 0 0 12px rgba(224,164,88,0.5);
+  }
+
+  .brand {
+    position: absolute;
+    left: 0; right: 0;
+    top: 34%;
+    text-align: center;
+    font-size: 0.7rem;
+    letter-spacing: 0.45em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    padding-left: 0.45em;
+  }
+
+  .readout { text-align: center; animation: rise 1s .15s cubic-bezier(.2,.8,.2,1) both; }
+  .digital {
+    font-family: 'Space Mono', monospace;
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--amber);
+  }
+  .digital .ampm { font-size: 1.1rem; color: var(--muted); margin-left: 0.4rem; }
+  .date {
+    margin-top: 0.4rem;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+  <div class="clock" id="clock">
+    <div class="brand">Chrono</div>
+    <div class="hand hour"   id="hour"></div>
+    <div class="hand minute" id="minute"></div>
+    <div class="hand second" id="second"></div>
+    <div class="cap"></div>
+  </div>
+
+  <div class="readout">
+    <div class="digital"><span id="time">--:--:--</span><span class="ampm" id="ampm"></span></div>
+    <div class="date" id="date"></div>
+  </div>
+
+<script>
+  const clock = document.getElementById('clock');
+
+  // Build tick marks
+  for (let i = 0; i < 60; i++) {
+    const t = document.createElement('div');
+    t.className = 'tick' + (i % 5 === 0 ? ' hour' : '');
+    t.style.transform = `translateX(-50%) rotate(${i * 6}deg)`;
+    clock.appendChild(t);
+  }
+
+  // Build the 12, 3, 6, 9 numerals
+  const numerals = { 12: [0, -118], 3: [118, 0], 6: [0, 118], 9: [-118, 0] };
+  for (const [num, [x, y]] of Object.entries(numerals)) {
+    const n = document.createElement('div');
+    n.className = 'numeral';
+    n.textContent = num;
+    n.style.left = `calc(50% - 20px + ${x}px)`;
+    n.style.top  = `calc(50% - 13px + ${y}px)`;
+    clock.appendChild(n);
+  }
+
+  const hourHand = document.getElementById('hour');
+  const minHand  = document.getElementById('minute');
+  const secHand  = document.getElementById('second');
+  const timeEl   = document.getElementById('time');
+  const ampmEl   = document.getElementById('ampm');
+  const dateEl   = document.getElementById('date');
+
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  function tick() {
+    const now = new Date();
+    const ms = now.getMilliseconds();
+    const s = now.getSeconds() + ms / 1000;
+    const m = now.getMinutes() + s / 60;
+    const h = (now.getHours() % 12) + m / 60;
+
+    secHand.style.transform  = `rotate(${s * 6}deg)`;
+    minHand.style.transform  = `rotate(${m * 6}deg)`;
+    hourHand.style.transform = `rotate(${h * 30}deg)`;
+
+    let hr = now.getHours();
+    const ampm = hr >= 12 ? 'PM' : 'AM';
+    hr = hr % 12 || 12;
+    const pad = n => String(n).padStart(2, '0');
+    timeEl.textContent = `${pad(hr)}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    ampmEl.textContent = ampm;
+    dateEl.textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+    requestAnimationFrame(tick);
+  }
+  tick();
+</script>
+</body>
+</html>
