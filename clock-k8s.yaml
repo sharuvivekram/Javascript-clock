@@ -1,0 +1,38 @@
+# clock-k8s.yaml
+# Two Kubernetes objects in one file, separated by "---".
+# 1) A Deployment: tells Kubernetes to run and maintain copies of your clock.
+# 2) A Service: gives those copies a stable address you can open in a browser.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: clock-deployment
+spec:
+  replicas: 2                 # run 2 identical copies (Pods) of the clock
+  selector:
+    matchLabels:
+      app: clock              # this Deployment manages Pods labelled app=clock
+  template:                   # the blueprint for each Pod
+    metadata:
+      labels:
+        app: clock
+    spec:
+      containers:
+        - name: clock
+          image: my-clock     # the image you built earlier with docker build
+          imagePullPolicy: IfNotPresent   # use the local image, don't fetch from a registry
+          ports:
+            - containerPort: 80           # nginx serves on port 80 inside the container
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clock-service
+spec:
+  type: NodePort             # exposes the app on a port of your machine
+  selector:
+    app: clock               # routes traffic to Pods labelled app=clock
+  ports:
+    - port: 80               # the Service's own port
+      targetPort: 80         # the container port it forwards to
+      nodePort: 30080        # the port on localhost you'll open in the browser
